@@ -28,5 +28,6 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_KEY }}
           script: |
-            chmod +x /home/ubuntu/blue-green-deploy/scripts/deploy.sh
-            /home/ubuntu/blue-green-deploy/scripts/deploy.sh
+            chmod +x /home/ubuntu/blue-green-deploy/.scripts/deploy.sh
+            /home/ubuntu/blue-green-deploy/.scripts/deploy.sh
+
