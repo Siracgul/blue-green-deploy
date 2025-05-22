@@ -1,10 +1,8 @@
 #!/bin/bash
 
-# Aktif portları tanımla
 GREEN_PORT=8081
 BLUE_PORT=8082
 
-# Hangi port şu anda aktif?
 CURRENT_COLOR=$(cat /home/ubuntu/current_color.txt)
 
 if [ "$CURRENT_COLOR" == "blue" ]; then
@@ -17,11 +15,11 @@ else
   OLD_PORT=$GREEN_PORT
 fi
 
-# Yeni ortama istek at
-STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:$NEW_PORT)
+# Yeni versiyona istek at, içerik içinde kontrol yap
+RESPONSE=$(curl -s http://localhost:$NEW_PORT)
 
-if [ "$STATUS_CODE" == "200" ]; then
-  echo "✅ Yeni ortam ( $NEW_COLOR ) çalışıyor."
+if echo "$RESPONSE" | grep -q "HEALTH_CHECK_OK"; then
+  echo "✅ Yeni ortam ($NEW_COLOR) çalışıyor ve içerik uygun."
   echo "$NEW_COLOR" > /home/ubuntu/current_color.txt
 else
   echo "❌ Yeni ortam hata verdi. Rollback başlatılıyor..."
