@@ -31,3 +31,11 @@ jobs:
             chmod +x /home/ubuntu/blue-green-deploy/.scripts/deploy.sh
             /home/ubuntu/blue-green-deploy/.scripts/deploy.sh
 
+      - name: Update NGINX on Reverse Proxy
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.REVERSE_PROXY_IP }}
+          username: ubuntu
+          key: ${{ secrets.EC2_KEY }}
+          script: |
+            sudo ./update_nginx.sh
