@@ -8,35 +8,25 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v3
+      - name: Checkout Code
+        uses: actions/checkout@v3
 
-    - name: Copy files to EC2
-      uses: appleboy/scp-action@v0.1.4
-      with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ubuntu
-        key: ${{ secrets.EC2_KEY }}
-        source: "."
-        target: "/home/ubuntu/blue-green-deploy"
+      - name: Copy files to EC2
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_KEY }}
+          source: "."
+          target: "/home/ubuntu/blue-green-deploy"
 
-    - name: Run Deploy Script
-      uses: appleboy/ssh-action@v0.1.10
-      with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ubuntu
-        key: ${{ secrets.EC2_KEY }}
-        script: |
-          chmod +x /home/ubuntu/blue-green-deploy/deploy.sh
-          /home/ubuntu/blue-green-deploy/deploy.sh
-    - name: Run Deploy Script
-      uses: appleboy/ssh-action@v0.1.10
-      with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ubuntu
-        key: ${{ secrets.EC2_KEY }}
-        script: |
-          chmod +x /home/ubuntu/blue-app/deploy.sh
-          /home/ubuntu/blue-app/deploy.sh
+      - name: Run Deploy Script
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_KEY }}
+          script: |
+            chmod +x /home/ubuntu/blue-green-deploy/scripts/deploy.sh
+            /home/ubuntu/blue-green-deploy/scripts/deploy.sh
