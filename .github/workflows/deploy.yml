@@ -33,10 +33,25 @@ jobs:
           chmod +x .scripts/deploy.sh
           .scripts/deploy.sh
 
+    - name: Detect Green Port
+      id: detectport
+      uses: appleboy/ssh-action@v0.1.10
+      with:
+        host: ${{ secrets.GREEN_IP }}
+        username: ubuntu
+        key: ${{ secrets.EC2_KEY }}
+        script: |
+          COLOR=$(cat /home/ubuntu/current_color.txt)
+          if [ "$COLOR" = "blue" ]; then
+            echo "PORT=8080" >> $GITHUB_ENV
+          else
+            echo "PORT=8081" >> $GITHUB_ENV
+          fi
+
     - name: Health Check
       run: |
         sleep 5
-        curl -f http://${{ secrets.GREEN_IP }}:8080 || exit 1
+        curl -f http://${{ secrets.GREEN_IP }}:${{ env.PORT }} || exit 1
 
     - name: Switch NGINX to Green (on success)
       if: success()
