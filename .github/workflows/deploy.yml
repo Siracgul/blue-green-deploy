@@ -8,34 +8,56 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
+    - name: Checkout Code
+      uses: actions/checkout@v3
 
-      - name: Copy files to EC2
-        uses: appleboy/scp-action@v0.1.4
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ubuntu
-          key: ${{ secrets.EC2_KEY }}
-          source: "."
-          target: "/home/ubuntu/blue-green-deploy"
+    - name: Copy code to Green Server
+      uses: appleboy/scp-action@v0.1.4
+      with:
+        host: ${{ secrets.GREEN_IP }}
+        username: ubuntu
+        key: ${{ secrets.EC2_KEY }}
+        source: "."
+        target: "/home/ubuntu/blue-green-deploy"
 
-      - name: Run Deploy Script
-        uses: appleboy/ssh-action@v0.1.10
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ubuntu
-          key: ${{ secrets.EC2_KEY }}
-          script: |
-            chmod +x /home/ubuntu/blue-green-deploy/.scripts/deploy.sh
-            /home/ubuntu/blue-green-deploy/.scripts/deploy.sh
+    - name: Deploy to Green
+      uses: appleboy/ssh-action@v0.1.10
+      with:
+        host: ${{ secrets.GREEN_IP }}
+        username: ubuntu
+        key: ${{ secrets.EC2_KEY }}
+        script: |
+          cd /home/ubuntu/blue-green-deploy
+          chmod +x .scripts/deploy.sh
+          .scripts/deploy.sh
 
-      - name: Update NGINX on Reverse Proxy
-        uses: appleboy/ssh-action@v0.1.10
-        with:
-          host: ${{ secrets.REVERSE_PROXY_IP }}
-          username: ubuntu
-          key: ${{ secrets.EC2_KEY }}
-          script: |
-            sudo ./update_nginx.sh
+    - name: Health Check
+      run: |
+        sleep 5
+        curl -f http://${{ secrets.GREEN_IP }}:8080 || exit 1
+
+    - name: Switch NGINX to Green (on success)
+      if: success()
+      uses: appleboy/ssh-action@v0.1.10
+      with:
+        host: ${{ secrets.REVERSE_PROXY_IP }}
+        username: ubuntu
+        key: ${{ secrets.EC2_KEY }}
+        script: |
+          sudo sed -i 's/${{ secrets.BLUE_IP }}/${{ secrets.GREEN_IP }}/' /etc/nginx/sites-available/default
+          sudo nginx -t
+          sudo systemctl restart nginx
+
+    - name: Rollback to Blue (on failure)
+      if: failure()
+      uses: appleboy/ssh-action@v0.1.10
+      with:
+        host: ${{ secrets.REVERSE_PROXY_IP }}
+        username: ubuntu
+        key: ${{ secrets.EC2_KEY }}
+        script: |
+          sudo sed -i 's/${{ secrets.GREEN_IP }}/${{ secrets.BLUE_IP }}/' /etc/nginx/sites-available/default
+          sudo nginx -t
+          sudo systemctl restart nginx
